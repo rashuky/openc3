@@ -174,6 +174,27 @@ module OpenC3
           tf.unlink
         end
 
+        fit "Bug: Little endian bit fields" do
+          tf = Tempfile.new('unittest')
+          tf.puts 'TELEMETRY tgt1 pkt1 LITTLE_ENDIAN "Description"'
+          tf.puts 'APPEND_ID_ITEM      packet-version-number                 3 UINT          0 "moved from Ccsds-primary-header to here to avoid C compiler padding issues"'
+          tf.puts 'APPEND_ID_ITEM      packet-type-is-cmd                    1 UINT          0 ""'
+          tf.puts '    STATE False                           0'
+          tf.puts '    STATE True                            1'
+          tf.puts 'APPEND_ID_ITEM      sec-hdr-flag-is-present               1 UINT          1 ""'
+          tf.puts '    STATE False                           0'
+          tf.puts '    STATE True                            1'
+          tf.puts 'APPEND_ID_ITEM      application-process-identifier       11 UINT       0x99 ""'
+          tf.close
+          @pc.process_file(tf.path, "TGT1")
+          packet = @pc.telemetry["TGT1"]["PKT1"]
+          packet.buffer = "\x99\x08"
+          expect(packet.read("packet-version-number")).to eql 0x04
+          expect(packet.read("sec-hdr-flag-is-present")).to eql "TRUE"
+          expect(packet.read("application-process-identifier")).to eql 0x108
+          tf.unlink
+        end
+
         it "complains if an ITEM is redefined" do
           tf = Tempfile.new('unittest')
           tf.puts 'TELEMETRY TGT1 PKT1 BIG_ENDIAN "Description"'

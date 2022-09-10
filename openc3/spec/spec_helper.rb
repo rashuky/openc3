@@ -228,6 +228,7 @@ def exit(*args)
 end
 
 RSpec.configure do |config|
+  config.filter_run focus: true
   # Enforce the new expect() syntax instead of the old should syntax
   config.expect_with :rspec do |c|
     c.syntax = :expect
